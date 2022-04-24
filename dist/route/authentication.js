@@ -61,10 +61,10 @@ router.post('/login', (req, res, next) => __awaiter(void 0, void 0, void 0, func
             return next(new errorHandler_1.CustomError('missing fields [email,password]', 400));
         const user = yield user_1.UserModel.findOne({ email: email });
         if (!user)
-            return next(new errorHandler_1.CustomError('user missing', 404));
+            return next(new errorHandler_1.CustomError('user not found', 404));
         const isSame = yield bcrypt_1.default.compare(password, user.password);
         if (!isSame)
-            return res.sendStatus(403);
+            return next(new errorHandler_1.CustomError('Credentials invalid', 403));
         const accesstoken = jsonwebtoken_1.default.sign({ id: user.id }, process.env.SECRET, { expiresIn: 60 }); //1 min 
         const refreshtoken = jsonwebtoken_1.default.sign({ id: user.id }, process.env.SECRET, { expiresIn: '1y' });
         user.refreshtoken.push(refreshtoken);

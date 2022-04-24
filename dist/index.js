@@ -25,7 +25,7 @@ mongoose_1.default.connect(process.env.DATABASE || '').then(res => {
     console.log(`Could not connect to database`);
 });
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)(corsOptions));
+app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.raw());
