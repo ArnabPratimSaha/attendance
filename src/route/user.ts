@@ -21,11 +21,27 @@ router.get('/',userHandler,async(req:UserRequset,res:CustomResponse,next:NextFun
         next(error);
     }
 })
+interface classResponseInterface{
+    id:string,
+    name:string,
+    createdAt:string,
+    teacher:string,
+    studentCount:number,
+    recordCount:number
+}
 router.get('/class',userHandler,async(req:UserRequset,res:CustomResponse,next:NextFunction)=>{
     try {
         if(!req.user)return next(new CustomError('No User',404));
         const classes=await ClassModel.find({ teachers: { $elemMatch:{ $eq:req.user.id} } }  ,'-_id -__v');
-        return res.status(200).json({classes,accesstoken:req.accesstoken});
+        const resData:Array<classResponseInterface>=classes.map(c=>{
+            const data:classResponseInterface={
+                id:c.id,name:c.name,teacher:c.teachers[0],createdAt:new Date().toString(),
+                recordCount:c.attendanceArray.length,
+                studentCount:c.students.length
+            }
+            return data;
+        })
+        return res.status(200).json({classes:resData,accesstoken:req.accesstoken});
     } catch (error) {
         next(error);
     }
