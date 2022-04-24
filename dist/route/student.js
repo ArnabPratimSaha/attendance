@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const uuid_1 = require("uuid");
 const userHandler_1 = require("../middleware/userHandler");
 const errorHandler_1 = require("../middleware/errorHandler");
 const class_1 = require("../database/class");
@@ -38,17 +39,70 @@ router.get('/', (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
         next(error);
     }
 }));
-router.delete('/', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
+router.post('/', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const id = (_c = req.body.id) === null || _c === void 0 ? void 0 : _c.trim();
+        const name = req.body.name;
+        const roll = req.body.roll;
+        if (!name || !roll)
+            return next(new errorHandler_1.CustomError('missing field name or roll', 400));
+        if (!req.classData)
+            return next(new errorHandler_1.CustomError('Class not found', 404));
+        const student = new student_1.StudentModel({
+            id: (0, uuid_1.v4)(),
+            name: name,
+            roll: roll,
+            classId: req.classData.id,
+            attendanceArray: new Array(req.classData.attendanceArray.length).fill(false),
+        });
+        const classData = yield class_1.ClassModel.findOne({ id: req.classData.id });
+        if (!classData)
+            return next('No Class found');
+        yield student.save();
+        classData.students.push(student.id);
+        yield classData.save();
+        return res.status(200).json(Object.assign(Object.assign({}, student.toObject()), { accesstoken: req.accesstoken }));
+    }
+    catch (error) {
+        next(error);
+    }
+}));
+router.patch('/', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const name = req.body.name;
+        const roll = req.body.roll;
+        const id = req.body.id;
+        if (!name || !roll || !id)
+            return next(new errorHandler_1.CustomError('missing field name or roll or id', 400));
+        if (!req.classData)
+            return next(new errorHandler_1.CustomError('Class not found', 404));
+        const student = yield student_1.StudentModel.findOne({ id: id });
+        if (!student)
+            return next(new errorHandler_1.CustomError('Student not found', 404));
+        student.name = name;
+        student.roll = roll;
+        yield student.save();
+        return res.status(200).json(Object.assign(Object.assign({}, student.toObject()), { accesstoken: req.accesstoken }));
+    }
+    catch (error) {
+        next(error);
+    }
+}));
+router.delete('/', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const id = req.body.id;
         if (!id)
-            return next(new errorHandler_1.CustomError('id missing', 400));
+            return next(new errorHandler_1.CustomError('missing field id', 400));
+        if (!req.classData)
+            return next(new errorHandler_1.CustomError('Class not found', 404));
+        const classData = yield class_1.ClassModel.findOne({ id: req.classData.id });
+        if (!classData)
+            return next('No Class found');
         const student = yield student_1.StudentModel.findOneAndDelete({ id: id });
         if (!student)
             return next(new errorHandler_1.CustomError('Student not found', 404));
-        const classData = yield class_1.ClassModel.findOneAndUpdate({ id: student.classId }, { $pull: { students: student.id } });
-        return res.sendStatus(200);
+        classData.students = classData.students.filter(i => i !== student.id);
+        yield classData.save();
+        return res.status(200).json(Object.assign(Object.assign({}, student.toObject()), { accesstoken: req.accesstoken }));
     }
     catch (error) {
         next(error);

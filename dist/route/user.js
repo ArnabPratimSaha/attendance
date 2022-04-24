@@ -36,7 +36,15 @@ router.get('/class', userHandler_1.userHandler, (req, res, next) => __awaiter(vo
         if (!req.user)
             return next(new errorHandler_1.CustomError('No User', 404));
         const classes = yield class_1.ClassModel.find({ teachers: { $elemMatch: { $eq: req.user.id } } }, '-_id -__v');
-        return res.status(200).json({ classes, accesstoken: req.accesstoken });
+        const resData = classes.map(c => {
+            const data = {
+                id: c.id, name: c.name, teacher: c.teachers[0], createdAt: new Date().toString(),
+                recordCount: c.attendanceArray.length,
+                studentCount: c.students.length
+            };
+            return data;
+        });
+        return res.status(200).json({ classes: resData, accesstoken: req.accesstoken });
     }
     catch (error) {
         next(error);

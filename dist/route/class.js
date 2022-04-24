@@ -20,7 +20,7 @@ const class_1 = require("../database/class");
 const teacherHandler_1 = require("../middleware/teacherHandler");
 const student_1 = require("../database/student");
 const router = express_1.default.Router();
-router.post('/create', userHandler_1.userHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/', userHandler_1.userHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.user)
             return next(new errorHandler_1.CustomError('No User', 404));
@@ -37,75 +37,6 @@ router.post('/create', userHandler_1.userHandler, (req, res, next) => __awaiter(
         });
         yield newClass.save();
         return res.status(200).json(Object.assign(Object.assign({}, newClass.toObject()), { accesstoken: req.accesstoken }));
-    }
-    catch (error) {
-        next(error);
-    }
-}));
-router.post('/student', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const name = req.body.name;
-        const roll = req.body.roll;
-        if (!name || !roll)
-            return next(new errorHandler_1.CustomError('missing field name or roll', 400));
-        if (!req.classData)
-            return next(new errorHandler_1.CustomError('Class not found', 404));
-        const student = new student_1.StudentModel({
-            id: (0, uuid_1.v4)(),
-            name: name,
-            roll: roll,
-            classId: req.classData.id,
-            attendanceArray: new Array(req.classData.attendanceArray.length).fill(false),
-        });
-        const classData = yield class_1.ClassModel.findOne({ id: req.classData.id });
-        if (!classData)
-            return next('No Class found');
-        yield student.save();
-        classData.students.push(student.id);
-        yield classData.save();
-        return res.status(200).json(Object.assign(Object.assign({}, student.toObject()), { accesstoken: req.accesstoken }));
-    }
-    catch (error) {
-        next(error);
-    }
-}));
-router.patch('/student', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const name = req.body.name;
-        const roll = req.body.roll;
-        const id = req.body.id;
-        if (!name || !roll || !id)
-            return next(new errorHandler_1.CustomError('missing field name or roll or id', 400));
-        if (!req.classData)
-            return next(new errorHandler_1.CustomError('Class not found', 404));
-        const student = yield student_1.StudentModel.findOne({ id: id });
-        if (!student)
-            return next(new errorHandler_1.CustomError('Student not found', 404));
-        student.name = name;
-        student.roll = roll;
-        yield student.save();
-        return res.status(200).json(Object.assign(Object.assign({}, student.toObject()), { accesstoken: req.accesstoken }));
-    }
-    catch (error) {
-        next(error);
-    }
-}));
-router.delete('/student', userHandler_1.userHandler, teacherHandler_1.teacherHandler, (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const id = req.body.id;
-        if (!id)
-            return next(new errorHandler_1.CustomError('missing field id', 400));
-        if (!req.classData)
-            return next(new errorHandler_1.CustomError('Class not found', 404));
-        const classData = yield class_1.ClassModel.findOne({ id: req.classData.id });
-        if (!classData)
-            return next('No Class found');
-        const student = yield student_1.StudentModel.findOneAndDelete({ id: id });
-        if (!student)
-            return next(new errorHandler_1.CustomError('Student not found', 404));
-        classData.students = classData.students.filter(i => i !== student.id);
-        yield classData.save();
-        return res.status(200).json(Object.assign(Object.assign({}, student.toObject()), { accesstoken: req.accesstoken }));
     }
     catch (error) {
         next(error);
